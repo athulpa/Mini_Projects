@@ -150,9 +150,6 @@ class BitString:
     def __rmul__(self, n):
         return NotImplemented
     
-    def __inverse__(self):
-        return BitString( [not v for v in self.vals] )    
-        
     def __and__(self, b):
         if not (hasattr(b, 'vals') and hasattr(b.vals, '__iter__')):
             return NotImplemented
