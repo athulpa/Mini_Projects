@@ -28,16 +28,40 @@ class Byte(BitString):
 # It prevents editing of all class attributes.
     def _lockObject(self):
         self.Locked = True
-        
+
+# TODO: Bug - cannot assign new attributes to an existing byte object.
     def __setattr__(self, nm, vl):
         if(hasattr(self, 'Locked') and self.Locked):
-            if(nm in ['Locked', 'numDigs', 'vals', '__setattr__']):
+            if(nm in ['Locked', 'numDigs', 'vals', '__setattr__', '__dict__']):
+                # Can't change Locked, otherwise yo can change that first and then change anything else.
+                # Can't set numDigs or vals
+                # Can't change __setattr__, otherwise you could change that first and then change anything else.
+                # Can't change __dict__, otherwise you could change the entire set of attributes/vals.
                 raise TypeError("Cannot edit read-only attribute '"+nm+"' of Byte object.") from None
-        # if(nm=='numDigs'):
-        #     if(hasattr(self, 'numDigs')):
-        #         raise TypeError("Cannot set read-only property 'numDigs' of Byte object")
+            else:
+                super().__setattr__(nm, vl)
         else:
             super().__setattr__(nm, vl)
+        
+    def __getattribute__(self, name):
+        # if(name in ['vals'])
+        if(name=='vals'):
+            ret = super().__getattribute__(name)
+            return ret.copy()
+        elif(name=='__dict__'):
+            # User shouldn't be abl modify __dict__ directly to make his changes to attributes
+            # __dict__ is modified before returning: a copy of dict is returned and all mutables in dict.values() are also copied.
+            print('WARNING: __dict__ has been accessed')
+            mutables = ['vals']
+            # immutables = ['numDigs', 'Locked']
+            ret = super().__getattribute__(name)
+            ret = ret.copy()
+            for m in mutables:
+                if(m in ret.keys()):
+                    ret[m] = ret[m].copy()
+            return ret
+        else:
+            return super().__getattribute__(name)
             
     def __delattr__(self, nm):
         if(hasattr(self, 'Locked') and self.Locked):
@@ -192,12 +216,17 @@ class Byte(BitString):
     
     def __getitem__(self, key):
         try:
-            return self.vals[key]
-        except IndexError:
-            raise IndexError('Byte object has indices 0-7 only') from None
+            key = int(key)
+        except ValueError:
+            raise TypeError("Unsupported type "+str(type(key))+" for indexing into Byte") from None
+        if(key not in range(Eight)):
+            raise IndexError('Byte object has indices 0-7 only, not '+str(key)+'.') from None
+        else:
+            return self.vals[Eight-1-key]
     
     def __setitem__(self, pos, val):
-        raise NotImplementedError('Cannot change individual bits in a Byte object')
+        raise TypeError('Cannot change individual bits in a Byte object')
+    
     
     def __str__(self):
         return self.disp(Format='hex')
