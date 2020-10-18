@@ -183,10 +183,18 @@ class BitString:
     #     return iter(self.vals)     # Return an iterator for b.vals
     
     def __getitem__(self, key):
+        # Makes B[0] the Least Significant Bit (that means B[0] = B.vals[-1])
+        # Compatible with standard Binary Notation  B0 should be the LSB of BitString B
         try:
-            return BitString(self.vals[key])
-        except IndexError:
-            raise IndexError('BitString index out of range')
+            key = int(key)
+        except ValueError:
+            raise IndexError('Unable to convert '+str(key)+' to an index')
+        if(key not in range(self.numDigs)):
+            raise IndexError('Index '+str(key)+' is out of range for BitString object')
+        else:
+            return BitString(self.vals[self.numDigs-1-key])
+        
+            
     
     def __setitem__(self, pos, val):
         try:
